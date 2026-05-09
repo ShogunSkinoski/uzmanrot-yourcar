@@ -25,14 +25,10 @@ export async function GET(req: NextRequest) {
     .orderBy(desc(alignmentRecords.serviceDate), desc(alignmentRecords.id))
     .get();
 
-  if (!record) {
-    return NextResponse.json({ error: "Bu araç için ölçüm kaydı bulunamadı" }, { status: 404 });
-  }
-
   return NextResponse.json({
     vehicle,
-    record: record.alignment_records,
-    technician: record.users ? { fullName: record.users.fullName } : null,
-    primaryAngles: record.primary_angles,
+    record: record?.alignment_records ?? null,
+    technician: record?.users ? { fullName: record.users.fullName } : null,
+    primaryAngles: record?.primary_angles ?? null,
   });
 }

@@ -99,3 +99,76 @@ export const primaryAngles = sqliteTable("primary_angles", {
   thrustAngleFinal: real("thrust_angle_final"),
   colors: text("colors"), // JSON: { fieldKey: "red" | "yellow" | "green" }
 });
+
+// Lastik seti (genelde 4'lü). Konum yalnızca depodayken anlamlı.
+export const tireSets = sqliteTable("tire_sets", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  vehicleId: integer("vehicle_id")
+    .notNull()
+    .references(() => vehicles.id),
+  season: text("season", { enum: ["summer", "winter", "all_season"] }).notNull(),
+  brand: text("brand"),
+  modelName: text("model_name"),
+  sizeText: text("size_text"),
+  status: text("status", { enum: ["on_vehicle", "in_storage"] })
+    .notNull()
+    .default("in_storage"),
+  zoneCode: text("zone_code"),
+  rowCode: text("row_code"),
+  slotCode: text("slot_code"),
+  installedKm: integer("installed_km"),
+  removedKm: integer("removed_km"),
+  notes: text("notes"),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
+// Tekil lastik. tireSetId null ise bağımsız (yedek/tek).
+export const tires = sqliteTable("tires", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  vehicleId: integer("vehicle_id")
+    .notNull()
+    .references(() => vehicles.id),
+  tireSetId: integer("tire_set_id").references(() => tireSets.id),
+  position: text("position", { enum: ["FL", "FR", "RL", "RR", "spare"] }),
+  season: text("season", { enum: ["summer", "winter", "all_season"] }),
+  brand: text("brand"),
+  modelName: text("model_name"),
+  sizeText: text("size_text"),
+  status: text("status", { enum: ["on_vehicle", "in_storage"] })
+    .notNull()
+    .default("in_storage"),
+  zoneCode: text("zone_code"),
+  rowCode: text("row_code"),
+  slotCode: text("slot_code"),
+  notes: text("notes"),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
+export const tireOperations = sqliteTable("tire_operations", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  vehicleId: integer("vehicle_id")
+    .notNull()
+    .references(() => vehicles.id),
+  technicianId: integer("technician_id")
+    .notNull()
+    .references(() => users.id),
+  operationType: text("operation_type", {
+    enum: ["seasonal_change", "store", "retrieve", "new_install"],
+  }).notNull(),
+  serviceDate: integer("service_date", { mode: "timestamp" }).notNull(),
+  kmAtService: integer("km_at_service"),
+  orderNo: text("order_no"),
+  removedTireSetId: integer("removed_tire_set_id").references(() => tireSets.id),
+  installedTireSetId: integer("installed_tire_set_id").references(() => tireSets.id),
+  removedToZone: text("removed_to_zone"),
+  removedToRow: text("removed_to_row"),
+  removedToSlot: text("removed_to_slot"),
+  notes: text("notes"),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});

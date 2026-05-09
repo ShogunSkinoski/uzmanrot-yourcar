@@ -2,13 +2,15 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, ClipboardList, Car, LogOut, Menu } from "lucide-react";
+import { LayoutDashboard, ClipboardList, Car, Disc, Repeat, LogOut, Menu } from "lucide-react";
 import { useState } from "react";
 
 const NAV = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/records", label: "Kayıtlar", icon: ClipboardList },
   { href: "/admin/vehicles", label: "Araçlar", icon: Car },
+  { href: "/admin/tires", label: "Lastikler", icon: Disc },
+  { href: "/admin/tire-operations", label: "Lastik İşlemleri", icon: Repeat },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

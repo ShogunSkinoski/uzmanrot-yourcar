@@ -81,7 +81,72 @@ async function seed() {
     thrustAngleInitial: -0.05, thrustAngleFinal: -0.07,
   }).run();
 
+  // ── Lastik oteli örnek verisi ──────────────────────────────────────────────
+  const summerSet = db
+    .insert(schema.tireSets)
+    .values({
+      vehicleId: vehicle.id,
+      season: "summer",
+      brand: "Michelin",
+      modelName: "Primacy 4",
+      sizeText: "215/55 R17 94V",
+      status: "on_vehicle",
+      installedKm: 148000,
+    })
+    .returning()
+    .get();
+
+  const winterSet = db
+    .insert(schema.tireSets)
+    .values({
+      vehicleId: vehicle.id,
+      season: "winter",
+      brand: "Bridgestone",
+      modelName: "Blizzak LM005",
+      sizeText: "215/55 R17 98V",
+      status: "in_storage",
+      zoneCode: "A",
+      rowCode: "12",
+      slotCode: "3",
+      installedKm: 132000,
+      removedKm: 148000,
+    })
+    .returning()
+    .get();
+
+  const positions = ["FL", "FR", "RL", "RR"] as const;
+  for (const set of [summerSet, winterSet]) {
+    for (const position of positions) {
+      db.insert(schema.tires).values({
+        vehicleId: vehicle.id,
+        tireSetId: set.id,
+        position,
+        season: set.season,
+        brand: set.brand,
+        modelName: set.modelName,
+        sizeText: set.sizeText,
+        status: set.status,
+      }).run();
+    }
+  }
+
+  db.insert(schema.tireOperations).values({
+    vehicleId: vehicle.id,
+    technicianId: admin.id,
+    operationType: "seasonal_change",
+    serviceDate: new Date("2026-04-15T10:00:00"),
+    kmAtService: 148000,
+    orderNo: "L-2026-001",
+    removedTireSetId: winterSet.id,
+    installedTireSetId: summerSet.id,
+    removedToZone: "A",
+    removedToRow: "12",
+    removedToSlot: "3",
+    notes: "Sezonluk değişim — kış lastikleri depoya alındı.",
+  }).run();
+
   console.log("Örnek araç: 42ABC42");
+  console.log("Lastik setleri (yaz takılı, kış depoda A-12-3) ve sezon değişimi eklendi.");
   console.log("Giriş: admin@uzmanrot.com / uzmanrot2026");
 }
 

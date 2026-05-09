@@ -1,9 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
-import { vehicles, alignmentRecords, users } from "@/db/schema";
+import { vehicles, alignmentRecords, users, tireSets, tireOperations } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import {
+  SEASON_LABEL,
+  STATUS_LABEL,
+  OPERATION_LABEL,
+  formatLocation,
+} from "@/lib/tires";
 
 export default async function VehicleDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -24,6 +30,27 @@ export default async function VehicleDetailPage({ params }: { params: Promise<{ 
     .leftJoin(users, eq(alignmentRecords.technicianId, users.id))
     .where(eq(alignmentRecords.vehicleId, vehicleId))
     .orderBy(desc(alignmentRecords.serviceDate))
+    .all();
+
+  const vehicleTireSets = db
+    .select()
+    .from(tireSets)
+    .where(eq(tireSets.vehicleId, vehicleId))
+    .orderBy(desc(tireSets.createdAt))
+    .all();
+
+  const vehicleTireOps = db
+    .select({
+      id: tireOperations.id,
+      operationType: tireOperations.operationType,
+      serviceDate: tireOperations.serviceDate,
+      orderNo: tireOperations.orderNo,
+      technicianName: users.fullName,
+    })
+    .from(tireOperations)
+    .leftJoin(users, eq(tireOperations.technicianId, users.id))
+    .where(eq(tireOperations.vehicleId, vehicleId))
+    .orderBy(desc(tireOperations.serviceDate))
     .all();
 
   const vehicleLabel = [vehicle.make, vehicle.model].filter(Boolean).join(" ") || "—";
@@ -64,10 +91,10 @@ export default async function VehicleDetailPage({ params }: { params: Promise<{ 
       </div>
 
       <h2 className="text-sm font-bold text-gray-700 mb-3 px-1">
-        Geçmiş İşlemler <span className="text-gray-400 font-semibold">({records.length})</span>
+        Rot/Balans Kayıtları <span className="text-gray-400 font-semibold">({records.length})</span>
       </h2>
 
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden mb-6">
         {records.length === 0 ? (
           <div className="px-4 py-12 text-center text-gray-400 text-sm">
             Bu araç için henüz işlem kaydı yok.
@@ -85,6 +112,99 @@ export default async function VehicleDetailPage({ params }: { params: Promise<{ 
                     {r.technicianName ?? "—"}
                     {r.orderNo ? ` · Sipariş: ${r.orderNo}` : ""}
                     {r.kmAtService ? ` · ${r.kmAtService.toLocaleString("tr-TR")} km` : ""}
+                  </div>
+                </div>
+                <ChevronRight size={16} className="text-gray-300" />
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between mb-3 px-1">
+        <h2 className="text-sm font-bold text-gray-700">
+          Lastikler <span className="text-gray-400 font-semibold">({vehicleTireSets.length})</span>
+        </h2>
+        <Link href="/admin/tires/new"
+          className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold text-white"
+          style={{ background: "#f97316" }}>
+          <Plus size={12} /> Yeni Set
+        </Link>
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden mb-6">
+        {vehicleTireSets.length === 0 ? (
+          <div className="px-4 py-12 text-center text-gray-400 text-sm">
+            Bu araç için lastik kaydı yok.
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-50">
+            {vehicleTireSets.map((s) => (
+              <Link key={s.id} href={`/admin/tires/${s.id}`}
+                className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors">
+                <div>
+                  <div className="text-sm font-bold text-gray-800">
+                    {SEASON_LABEL[s.season]}
+                    <span className="ml-2 text-xs font-semibold" style={{
+                      color: s.status === "on_vehicle" ? "#16a34a" : "#92400e",
+                    }}>
+                      ({STATUS_LABEL[s.status]})
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-400 mt-0.5 font-mono">
+                    {[s.brand, s.modelName].filter(Boolean).join(" ") || "—"}
+                    {s.sizeText ? ` · ${s.sizeText}` : ""}
+                    {s.status === "in_storage" &&
+                      ` · ${formatLocation(s.zoneCode, s.rowCode, s.slotCode)}`}
+                  </div>
+                  {(s.installedKm != null || s.removedKm != null) && (
+                    <div className="text-xs text-gray-500 mt-0.5">
+                      {s.installedKm != null && (
+                        <>Takıldı: <span className="font-mono font-semibold">{s.installedKm.toLocaleString("tr-TR")} km</span></>
+                      )}
+                      {s.installedKm != null && s.removedKm != null && " · "}
+                      {s.removedKm != null && (
+                        <>Söküldü: <span className="font-mono font-semibold">{s.removedKm.toLocaleString("tr-TR")} km</span></>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <ChevronRight size={16} className="text-gray-300" />
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between mb-3 px-1">
+        <h2 className="text-sm font-bold text-gray-700">
+          Lastik İşlemleri <span className="text-gray-400 font-semibold">({vehicleTireOps.length})</span>
+        </h2>
+        <Link href="/admin/tire-operations/new"
+          className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold text-white"
+          style={{ background: "#f97316" }}>
+          <Plus size={12} /> Yeni İşlem
+        </Link>
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+        {vehicleTireOps.length === 0 ? (
+          <div className="px-4 py-12 text-center text-gray-400 text-sm">
+            Bu araç için lastik işlemi yok.
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-50">
+            {vehicleTireOps.map((o) => (
+              <Link key={o.id} href={`/admin/tire-operations/${o.id}`}
+                className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors">
+                <div>
+                  <div className="text-sm font-bold text-gray-800">
+                    {OPERATION_LABEL[o.operationType]}
+                  </div>
+                  <div className="text-xs text-gray-400 mt-0.5">
+                    {o.serviceDate ? new Date(o.serviceDate).toLocaleString("tr-TR") : "—"}
+                    {o.technicianName ? ` · ${o.technicianName}` : ""}
+                    {o.orderNo ? ` · ${o.orderNo}` : ""}
                   </div>
                 </div>
                 <ChevronRight size={16} className="text-gray-300" />
