@@ -3,59 +3,81 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronRight, ChevronLeft, Check, Search } from "lucide-react";
+import { createRecord } from "./actions";
 
 type VehicleFound = {
   plate: string; make: string | null; model: string | null;
-  yearFrom: number | null; yearTo: number | null;
   ownerName: string | null; ownerPhone: string | null; km: number | null;
 };
 
 type PrimaryData = Record<string, string>;
-type SecondaryData = Record<string, string>;
+type ColorStatus = "red" | "yellow" | "green";
+type ColorMap = Record<string, ColorStatus>;
+
+const COLOR_STYLES: Record<ColorStatus, { border: string; bg: string; dot: string }> = {
+  red:    { border: "#fca5a5", bg: "#fff5f5", dot: "#dc2626" },
+  yellow: { border: "#fcd34d", bg: "#fffbeb", dot: "#f59e0b" },
+  green:  { border: "#86efac", bg: "#f0fdf4", dot: "#16a34a" },
+};
 
 // ─── Reusable field components ───────────────────────────────────────────────
 
-function FieldInput({
-  label, name, value, onChange, unit = "", type = "number",
-  specMin, specMax, placeholder,
+function ColorFieldInput({
+  name, value, onChange, color, onColorChange, unit = "", placeholder,
 }: {
-  label?: string; name: string; value: string; onChange: (name: string, v: string) => void;
-  unit?: string; type?: string; specMin?: number; specMax?: number; placeholder?: string;
+  name: string; value: string; onChange: (name: string, v: string) => void;
+  color: ColorStatus | undefined; onColorChange: (name: string, c: ColorStatus | undefined) => void;
+  unit?: string; placeholder?: string;
 }) {
-  const num = parseFloat(value);
-  const outOfSpec = !isNaN(num) && specMin != null && specMax != null && (num < specMin || num > specMax);
-  const inSpec = !isNaN(num) && specMin != null && specMax != null && num >= specMin && num <= specMax;
+  const style = color ? COLOR_STYLES[color] : null;
 
   return (
-    <div className="flex flex-col gap-0.5">
-      {label && <label className="text-xs text-gray-400 font-medium">{label}</label>}
+    <div className="flex flex-col gap-1">
       <div className="flex items-center gap-1">
         <input
-          type={type}
-          step={type === "number" ? "0.01" : undefined}
+          type="number"
+          step="0.01"
           value={value}
           onChange={(e) => onChange(name, e.target.value)}
           placeholder={placeholder ?? "0.00"}
           className="w-full rounded-lg border px-2 py-1.5 text-sm outline-none transition-colors font-mono"
           style={{
-            borderColor: outOfSpec ? "#fca5a5" : inSpec ? "#86efac" : "#e5e7eb",
-            background: outOfSpec ? "#fff5f5" : inSpec ? "#f0fdf4" : "#fff",
+            borderColor: style?.border ?? "#e5e7eb",
+            background: style?.bg ?? "#fff",
           }}
         />
         {unit && <span className="text-xs text-gray-400 shrink-0">{unit}</span>}
       </div>
-      {specMin != null && specMax != null && (
-        <span className="text-xs text-gray-300">{specMin} – {specMax}</span>
-      )}
+      <div className="flex items-center gap-1">
+        {(["red", "yellow", "green"] as const).map((c) => {
+          const active = color === c;
+          return (
+            <button
+              key={c}
+              type="button"
+              onClick={() => onColorChange(name, active ? undefined : c)}
+              className="w-5 h-5 rounded-full border-2 transition-all"
+              style={{
+                background: COLOR_STYLES[c].dot,
+                borderColor: active ? "#1f2937" : "transparent",
+                opacity: active ? 1 : 0.55,
+              }}
+              aria-label={c}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }
 
-function AngleGrid({ title, fields, data, onChange }: {
+function AngleGrid({ title, fields, data, onChange, colors, onColorChange }: {
   title: string;
-  fields: { label: string; initialKey: string; finalKey: string; unit?: string; specMin?: number; specMax?: number }[];
-  data: PrimaryData | SecondaryData;
+  fields: { label: string; initialKey: string; finalKey: string; unit?: string }[];
+  data: PrimaryData;
   onChange: (name: string, v: string) => void;
+  colors: ColorMap;
+  onColorChange: (name: string, c: ColorStatus | undefined) => void;
 }) {
   return (
     <div className="mb-4">
@@ -71,9 +93,22 @@ function AngleGrid({ title, fields, data, onChange }: {
         {fields.map((f) => (
           <div key={f.initialKey} className="grid gap-2 px-3 py-2 border-b border-gray-50 last:border-0" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>
             <span className="text-xs font-semibold text-gray-700 flex items-center">{f.label}</span>
-            <FieldInput name={f.initialKey} value={data[f.initialKey] ?? ""} onChange={onChange} unit={f.unit} />
-            <FieldInput name={f.finalKey} value={data[f.finalKey] ?? ""} onChange={onChange} unit={f.unit}
-              specMin={f.specMin} specMax={f.specMax} />
+            <ColorFieldInput
+              name={f.initialKey}
+              value={data[f.initialKey] ?? ""}
+              onChange={onChange}
+              color={colors[f.initialKey]}
+              onColorChange={onColorChange}
+              unit={f.unit}
+            />
+            <ColorFieldInput
+              name={f.finalKey}
+              value={data[f.finalKey] ?? ""}
+              onChange={onChange}
+              color={colors[f.finalKey]}
+              onColorChange={onColorChange}
+              unit={f.unit}
+            />
           </div>
         ))}
       </div>
@@ -95,17 +130,15 @@ export default function NewRecordPage() {
 
   const [make, setMake] = useState("");
   const [model, setModel] = useState("");
-  const [yearFrom, setYearFrom] = useState("");
-  const [yearTo, setYearTo] = useState("");
   const [ownerName, setOwnerName] = useState("");
   const [ownerPhone, setOwnerPhone] = useState("");
   const [serviceDate, setServiceDate] = useState(new Date().toISOString().slice(0, 16));
   const [kmAtService, setKmAtService] = useState("");
   const [orderNo, setOrderNo] = useState("");
 
-  // Steps 2 & 3
+  // Step 2
   const [primary, setPrimary] = useState<PrimaryData>({});
-  const [secondary, setSecondary] = useState<SecondaryData>({});
+  const [colors, setColors] = useState<ColorMap>({});
   const [saving, setSaving] = useState(false);
 
   // ── Plate lookup ────────────────────────────────────────────────────────────
@@ -124,8 +157,6 @@ export default function NewRecordPage() {
       setVehicleFound(data.vehicle);
       setMake(data.vehicle.make ?? "");
       setModel(data.vehicle.model ?? "");
-      setYearFrom(data.vehicle.yearFrom?.toString() ?? "");
-      setYearTo(data.vehicle.yearTo?.toString() ?? "");
       setOwnerName(data.vehicle.ownerName ?? "");
       setOwnerPhone(data.vehicle.ownerPhone ?? "");
     } else {
@@ -134,7 +165,14 @@ export default function NewRecordPage() {
   }
 
   function setPrimaryField(name: string, v: string) { setPrimary((p) => ({ ...p, [name]: v })); }
-  function setSecondaryField(name: string, v: string) { setSecondary((p) => ({ ...p, [name]: v })); }
+
+  function setColor(name: string, c: ColorStatus | undefined) {
+    setColors((prev) => {
+      const next = { ...prev };
+      if (c) next[name] = c; else delete next[name];
+      return next;
+    });
+  }
 
   function toNum(v: string | undefined) {
     if (!v) return null;
@@ -142,30 +180,32 @@ export default function NewRecordPage() {
     return isNaN(n) ? null : n;
   }
 
+  const [saveError, setSaveError] = useState("");
+
   async function handleSave() {
     setSaving(true);
+    setSaveError("");
     const primaryPayload: Record<string, number | null> = {};
-    const secondaryPayload: Record<string, number | null> = {};
     Object.entries(primary).forEach(([k, v]) => { primaryPayload[k] = toNum(v); });
-    Object.entries(secondary).forEach(([k, v]) => { secondaryPayload[k] = toNum(v); });
 
-    const res = await fetch("/api/admin/records", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        plate: plateInput.toUpperCase().replace(/\s/g, ""),
-        make: make || null, model: model || null,
-        yearFrom: yearFrom || null, yearTo: yearTo || null,
-        ownerName: ownerName || null, ownerPhone: ownerPhone || null,
-        serviceDate, kmAtService: kmAtService || null, orderNo: orderNo || null,
-        primary: primaryPayload, secondary: secondaryPayload,
-      }),
+    const result = await createRecord({
+      plate: plateInput.toUpperCase().replace(/\s/g, ""),
+      make: make || null,
+      model: model || null,
+      ownerName: ownerName || null,
+      ownerPhone: ownerPhone || null,
+      serviceDate,
+      kmAtService: kmAtService || null,
+      orderNo: orderNo || null,
+      primary: primaryPayload,
+      colors,
     });
 
     setSaving(false);
-    if (res.ok) {
-      const { id } = await res.json();
-      router.push(`/admin/records/${id}`);
+    if (result.ok) {
+      router.push(`/admin/records/${result.id}`);
+    } else {
+      setSaveError(result.error);
     }
   }
 
@@ -186,7 +226,7 @@ export default function NewRecordPage() {
 
       {/* Step indicator */}
       <div className="flex gap-2 mb-6">
-        {["Araç", "Birincil Açılar", "İkincil Açılar"].map((label, i) => {
+        {["Araç", "Birincil Açılar"].map((label, i) => {
           const s = i + 1;
           const active = step === s;
           const done = step > s;
@@ -199,7 +239,7 @@ export default function NewRecordPage() {
                 </div>
                 <span className="text-xs font-semibold hidden sm:block" style={{ color: active ? "#f97316" : "#9ca3af" }}>{label}</span>
               </div>
-              {s < 3 && <div className="flex-1 h-px bg-gray-200 mx-1" />}
+              {s < 2 && <div className="flex-1 h-px bg-gray-200 mx-1" />}
             </div>
           );
         })}
@@ -262,8 +302,6 @@ export default function NewRecordPage() {
                 {[
                   { key: "make", label: "Marka", value: make, set: setMake, placeholder: "FORD" },
                   { key: "model", label: "Model", value: model, set: setModel, placeholder: "S-MAX" },
-                  { key: "yearFrom", label: "Yıl (dan)", value: yearFrom, set: setYearFrom, placeholder: "2006" },
-                  { key: "yearTo", label: "Yıl (a)", value: yearTo, set: setYearTo, placeholder: "2013" },
                   { key: "ownerName", label: "Sahip Adı", value: ownerName, set: setOwnerName, placeholder: "Opsiyonel" },
                   { key: "ownerPhone", label: "Telefon", value: ownerPhone, set: setOwnerPhone, placeholder: "0532 000 0000" },
                 ].map(({ key, label, value, set, placeholder }) => (
@@ -319,65 +357,40 @@ export default function NewRecordPage() {
       {/* ── STEP 2: Birincil Açılar ───────────────────────────────────────────── */}
       {step === 2 && (
         <div className="flex flex-col gap-0">
-          <AngleGrid title="ÖN — KASTET" onChange={setPrimaryField} data={primary} fields={[
+          <AngleGrid title="ÖN — KASTER" onChange={setPrimaryField} data={primary} colors={colors} onColorChange={setColor} fields={[
             { label: "Sol", initialKey: "frontCasterLeftInitial", finalKey: "frontCasterLeftFinal", unit: "°" },
             { label: "Sağ", initialKey: "frontCasterRightInitial", finalKey: "frontCasterRightFinal", unit: "°" },
           ]} />
-          <AngleGrid title="ÖN — KAMBER" onChange={setPrimaryField} data={primary} fields={[
+          <AngleGrid title="ÖN — KAMBER" onChange={setPrimaryField} data={primary} colors={colors} onColorChange={setColor} fields={[
             { label: "Sol", initialKey: "frontCamberLeftInitial", finalKey: "frontCamberLeftFinal", unit: "°" },
             { label: "Sağ", initialKey: "frontCamberRightInitial", finalKey: "frontCamberRightFinal", unit: "°" },
           ]} />
-          <AngleGrid title="ÖN — ROT (mm)" onChange={setPrimaryField} data={primary} fields={[
+          <AngleGrid title="ÖN — ROT (mm)" onChange={setPrimaryField} data={primary} colors={colors} onColorChange={setColor} fields={[
             { label: "Sol", initialKey: "frontToeLeftInitial", finalKey: "frontToeLeftFinal", unit: "mm" },
             { label: "Sağ", initialKey: "frontToeRightInitial", finalKey: "frontToeRightFinal", unit: "mm" },
             { label: "Toplam", initialKey: "frontToeTotalInitial", finalKey: "frontToeTotalFinal", unit: "mm" },
           ]} />
-          <AngleGrid title="ARKA — KAMBER" onChange={setPrimaryField} data={primary} fields={[
+          <AngleGrid title="ARKA — KAMBER" onChange={setPrimaryField} data={primary} colors={colors} onColorChange={setColor} fields={[
             { label: "Sol", initialKey: "rearCamberLeftInitial", finalKey: "rearCamberLeftFinal", unit: "°" },
             { label: "Sağ", initialKey: "rearCamberRightInitial", finalKey: "rearCamberRightFinal", unit: "°" },
           ]} />
-          <AngleGrid title="ARKA — ROT (mm)" onChange={setPrimaryField} data={primary} fields={[
+          <AngleGrid title="ARKA — ROT (mm)" onChange={setPrimaryField} data={primary} colors={colors} onColorChange={setColor} fields={[
             { label: "Sol", initialKey: "rearToeLeftInitial", finalKey: "rearToeLeftFinal", unit: "mm" },
             { label: "Sağ", initialKey: "rearToeRightInitial", finalKey: "rearToeRightFinal", unit: "mm" },
             { label: "Toplam", initialKey: "rearToeTotalInitial", finalKey: "rearToeTotalFinal", unit: "mm" },
           ]} />
-          <AngleGrid title="ARKA — İTİŞ AÇISI" onChange={setPrimaryField} data={primary} fields={[
+          <AngleGrid title="ARKA — İTİŞ AÇISI" onChange={setPrimaryField} data={primary} colors={colors} onColorChange={setColor} fields={[
             { label: "İtiş Açısı", initialKey: "thrustAngleInitial", finalKey: "thrustAngleFinal", unit: "°" },
           ]} />
 
+          {saveError && (
+            <div className="mt-2 px-4 py-3 rounded-xl bg-red-50 border border-red-100 text-sm text-red-600">
+              {saveError}
+            </div>
+          )}
+
           <div className="flex justify-between mt-2">
             <button onClick={() => setStep(1)} className="flex items-center gap-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-500 hover:bg-gray-100 transition-colors">
-              <ChevronLeft size={16} /> Geri
-            </button>
-            <button onClick={() => setStep(3)} className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white" style={{ background: "#f97316" }}>
-              İleri <ChevronRight size={16} />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── STEP 3: İkincil Açılar ────────────────────────────────────────────── */}
-      {step === 3 && (
-        <div className="flex flex-col gap-0">
-          <AngleGrid title="S.A.İ." onChange={setSecondaryField} data={secondary} fields={[
-            { label: "Sol", initialKey: "saiLeftInitial", finalKey: "saiLeftFinal", unit: "°" },
-            { label: "Sağ", initialKey: "saiRightInitial", finalKey: "saiRightFinal", unit: "°" },
-          ]} />
-          <AngleGrid title="KAPSAM AÇISI" onChange={setSecondaryField} data={secondary} fields={[
-            { label: "Sol", initialKey: "includedAngleLeftInitial", finalKey: "includedAngleLeftFinal", unit: "°" },
-            { label: "Sağ", initialKey: "includedAngleRightInitial", finalKey: "includedAngleRightFinal", unit: "°" },
-          ]} />
-          <AngleGrid title="FLAŞON KAÇIKLIGI" onChange={setSecondaryField} data={secondary} fields={[
-            { label: "Ön", initialKey: "rimRunoutFrontInitial", finalKey: "rimRunoutFrontFinal", unit: "mm" },
-            { label: "Arka", initialKey: "rimRunoutRearInitial", finalKey: "rimRunoutRearFinal", unit: "mm" },
-          ]} />
-          <AngleGrid title="DİĞER ÖLÇÜMLER" onChange={setSecondaryField} data={secondary} fields={[
-            { label: "Tekerlek İzi Farkı", initialKey: "trackWidthDiffInitial", finalKey: "trackWidthDiffFinal", unit: "mm" },
-            { label: "Aks Merkez Farkı", initialKey: "axleCenterDiffInitial", finalKey: "axleCenterDiffFinal", unit: "mm" },
-          ]} />
-
-          <div className="flex justify-between mt-2">
-            <button onClick={() => setStep(2)} className="flex items-center gap-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-500 hover:bg-gray-100 transition-colors">
               <ChevronLeft size={16} /> Geri
             </button>
             <button onClick={handleSave} disabled={saving}

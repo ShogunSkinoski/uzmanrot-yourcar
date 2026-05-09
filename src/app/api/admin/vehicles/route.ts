@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
   const session = await getSession(req);
   if (!session) return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
 
-  const { plate, make, model, yearFrom, yearTo, km, ownerName, ownerPhone } = await req.json();
+  const { plate, make, model, km, ownerName, ownerPhone } = await req.json();
   if (!plate) return NextResponse.json({ error: "Plaka gerekli" }, { status: 400 });
 
   const normalizedPlate = plate.toUpperCase().replace(/\s/g, "");
@@ -38,8 +38,6 @@ export async function POST(req: NextRequest) {
       plate: normalizedPlate,
       make: make || null,
       model: model || null,
-      yearFrom: yearFrom ? parseInt(yearFrom) : null,
-      yearTo: yearTo ? parseInt(yearTo) : null,
       km: km ? parseInt(km) : null,
       ownerName: ownerName || null,
       ownerPhone: ownerPhone || null,

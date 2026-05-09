@@ -33,8 +33,6 @@ async function seed() {
       plate: "42ABC42",
       make: "FORD",
       model: "S-MAX",
-      yearFrom: 2006,
-      yearTo: 2013,
       km: 150000,
       ownerName: "Ahmet Yılmaz",
       ownerPhone: "0532 123 4567",
@@ -81,18 +79,6 @@ async function seed() {
     rearToeTotalInitial: -0.5, rearToeTotalFinal: -0.6,
     rearToeTotalMin: 4.6, rearToeTotalMax: 3.3,
     thrustAngleInitial: -0.05, thrustAngleFinal: -0.07,
-  }).run();
-
-  db.insert(schema.secondaryAngles).values({
-    recordId: record.id,
-    saiLeftInitial: 13.83, saiLeftFinal: 13.83, saiLeftMin: 13.62, saiLeftMax: 13.62,
-    saiRightInitial: 13.98, saiRightFinal: 13.98, saiRightMin: 13.62, saiRightMax: 13.62,
-    includedAngleLeftInitial: 13.08, includedAngleLeftFinal: 13.12,
-    includedAngleRightInitial: 12.92, includedAngleRightFinal: 12.88,
-    rimRunoutFrontInitial: 0, rimRunoutFrontFinal: -2,
-    rimRunoutRearInitial: 11, rimRunoutRearFinal: 2,
-    trackWidthDiffInitial: 2, trackWidthDiffFinal: -2,
-    axleCenterDiffInitial: 12, axleCenterDiffFinal: 4,
   }).run();
 
   console.log("Örnek araç: 42ABC42");

@@ -3,9 +3,10 @@ import { db } from "@/db";
 import { alignmentRecords, vehicles, users } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { Plus } from "lucide-react";
+import RecordList from "./RecordList";
 
 export default function RecordsPage() {
-  const records = db
+  const rows = db
     .select({
       id: alignmentRecords.id,
       orderNo: alignmentRecords.orderNo,
@@ -22,6 +23,11 @@ export default function RecordsPage() {
     .orderBy(desc(alignmentRecords.serviceDate))
     .all();
 
+  const records = rows.map((r) => ({
+    ...r,
+    serviceDate: r.serviceDate ? r.serviceDate.toISOString() : null,
+  }));
+
   return (
     <div className="max-w-4xl">
       <div className="flex items-center justify-between mb-6">
@@ -35,46 +41,7 @@ export default function RecordsPage() {
         </Link>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-        {records.length === 0 ? (
-          <div className="px-4 py-12 text-center text-gray-400 text-sm">
-            Henüz kayıt yok.{" "}
-            <Link href="/admin/records/new" style={{ color: "#f97316" }} className="font-semibold">
-              İlk kaydı ekle →
-            </Link>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-100">
-                <tr>
-                  {["Plaka", "Araç", "Araç Sahibi", "Tarih", "Teknisyen", ""].map((h) => (
-                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {records.map((r) => (
-                  <tr key={r.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 font-black font-mono text-gray-800">{r.plate}</td>
-                    <td className="px-4 py-3 text-gray-600">{[r.make, r.model].filter(Boolean).join(" ") || "—"}</td>
-                    <td className="px-4 py-3 text-gray-500 text-xs">{r.ownerName ?? "—"}</td>
-                    <td className="px-4 py-3 text-gray-500 text-xs">
-                      {r.serviceDate ? new Date(r.serviceDate).toLocaleDateString("tr-TR") : "—"}
-                    </td>
-                    <td className="px-4 py-3 text-gray-500 text-xs">{r.technicianName ?? "—"}</td>
-                    <td className="px-4 py-3 text-right">
-                      <Link href={`/admin/records/${r.id}`} className="text-xs font-semibold" style={{ color: "#f97316" }}>
-                        Detay →
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      <RecordList records={records} />
     </div>
   );
 }

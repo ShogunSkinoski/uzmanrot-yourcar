@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { vehicles, alignmentRecords, primaryAngles, secondaryAngles, users } from "@/db/schema";
+import { vehicles, alignmentRecords, primaryAngles, users } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 
 export async function GET(req: NextRequest) {
@@ -19,32 +19,20 @@ export async function GET(req: NextRequest) {
   const record = db
     .select()
     .from(alignmentRecords)
+    .innerJoin(primaryAngles, eq(primaryAngles.recordId, alignmentRecords.id))
     .leftJoin(users, eq(alignmentRecords.technicianId, users.id))
     .where(eq(alignmentRecords.vehicleId, vehicle.id))
-    .orderBy(desc(alignmentRecords.serviceDate))
+    .orderBy(desc(alignmentRecords.serviceDate), desc(alignmentRecords.id))
     .get();
 
   if (!record) {
-    return NextResponse.json({ error: "Bu araç için kayıt bulunamadı" }, { status: 404 });
+    return NextResponse.json({ error: "Bu araç için ölçüm kaydı bulunamadı" }, { status: 404 });
   }
-
-  const primary = db
-    .select()
-    .from(primaryAngles)
-    .where(eq(primaryAngles.recordId, record.alignment_records.id))
-    .get();
-
-  const secondary = db
-    .select()
-    .from(secondaryAngles)
-    .where(eq(secondaryAngles.recordId, record.alignment_records.id))
-    .get();
 
   return NextResponse.json({
     vehicle,
     record: record.alignment_records,
     technician: record.users ? { fullName: record.users.fullName } : null,
-    primaryAngles: primary ?? null,
-    secondaryAngles: secondary ?? null,
+    primaryAngles: record.primary_angles,
   });
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { alignmentRecords, primaryAngles, secondaryAngles, vehicles, users } from "@/db/schema";
+import { alignmentRecords, primaryAngles, vehicles, users } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { verifyToken, COOKIE_NAME } from "@/lib/auth";
 
@@ -41,8 +41,8 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
   const {
-    plate, make, model, yearFrom, yearTo, ownerName, ownerPhone,
-    kmAtService, orderNo, serviceDate, notes, primary, secondary,
+    plate, make, model, ownerName, ownerPhone,
+    kmAtService, orderNo, serviceDate, notes, primary, colors,
   } = body;
 
   if (!plate || !serviceDate) {
@@ -61,8 +61,6 @@ export async function POST(req: NextRequest) {
         plate: normalizedPlate,
         make: make || null,
         model: model || null,
-        yearFrom: yearFrom ? parseInt(yearFrom) : null,
-        yearTo: yearTo ? parseInt(yearTo) : null,
         km: kmAtService ? parseInt(kmAtService) : null,
         ownerName: ownerName || null,
         ownerPhone: ownerPhone || null,
@@ -70,15 +68,12 @@ export async function POST(req: NextRequest) {
       .returning()
       .get();
   } else if (ownerName || ownerPhone || make || model) {
-    // Update optional fields if provided
     db.update(vehicles)
       .set({
         ownerName: ownerName || vehicle.ownerName,
         ownerPhone: ownerPhone || vehicle.ownerPhone,
         make: make || vehicle.make,
         model: model || vehicle.model,
-        yearFrom: yearFrom ? parseInt(yearFrom) : vehicle.yearFrom,
-        yearTo: yearTo ? parseInt(yearTo) : vehicle.yearTo,
       })
       .where(eq(vehicles.id, vehicle.id))
       .run();
@@ -98,10 +93,11 @@ export async function POST(req: NextRequest) {
     .get();
 
   if (primary) {
-    db.insert(primaryAngles).values({ recordId: record.id, ...primary }).run();
-  }
-  if (secondary) {
-    db.insert(secondaryAngles).values({ recordId: record.id, ...secondary }).run();
+    db.insert(primaryAngles).values({
+      recordId: record.id,
+      ...primary,
+      colors: colors && Object.keys(colors).length > 0 ? JSON.stringify(colors) : null,
+    }).run();
   }
 
   return NextResponse.json({ ok: true, id: record.id }, { status: 201 });
