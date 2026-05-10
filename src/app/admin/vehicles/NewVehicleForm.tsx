@@ -34,7 +34,7 @@ export default function NewVehicleForm() {
     { key: "model", label: "Model", placeholder: "S-MAX" },
     { key: "km", label: "KM", placeholder: "150000" },
     { key: "ownerName", label: "Araç Sahibi", placeholder: "Opsiyonel" },
-    { key: "ownerPhone", label: "Telefon", placeholder: "0532 000 0000" },
+    { key: "ownerPhone", label: "Telefon", placeholder: "05050010816" },
   ];
 
   return (

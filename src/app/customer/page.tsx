@@ -3,6 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+function formatPlate(p: string): string {
+  if (!p) return "";
+  const m = p.match(/^(\d{0,2})([A-ZÇĞİÖŞÜ]*)(\d*)$/);
+  if (!m) return p;
+  return [m[1], m[2], m[3]].filter((s) => s.length > 0).join(" ");
+}
+
 export default function CustomerPage() {
   const router = useRouter();
   const [plate, setPlate] = useState("");
@@ -38,7 +45,10 @@ export default function CustomerPage() {
               <span
                 key={word}
                 className="font-black uppercase tracking-wide"
-                style={{ fontSize: "clamp(1.4rem, 8vw, 2.2rem)", color: "#1f2937" }}
+                style={{
+                  fontSize: "clamp(1.4rem, 8vw, 2.2rem)",
+                  color: word === "Balans" ? "#f97316" : "#1f2937",
+                }}
               >
                 {word}
               </span>
@@ -46,7 +56,7 @@ export default function CustomerPage() {
           </div>
           <p className="text-sm text-gray-400">MOTORLU SAN. EMEVİLER SK. NO: 9/11 KONYA</p>
           <p className="text-sm font-medium mt-0.5" style={{ color: "#f97316" }}>
-            0332 237 9226 / 0532 523 2903
+            05050010816
           </p>
         </div>
 
@@ -62,11 +72,16 @@ export default function CustomerPage() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <input
               type="text"
-              value={plate}
+              value={formatPlate(plate)}
               onChange={(e) => setPlate(e.target.value.toUpperCase().replace(/\s/g, ""))}
               placeholder="34 ABC 42"
-              maxLength={10}
-              autoFocus
+              maxLength={12}
+              autoCapitalize="characters"
+              autoCorrect="off"
+              autoComplete="off"
+              spellCheck={false}
+              inputMode="text"
+              enterKeyHint="go"
               className="w-full text-center text-3xl font-black tracking-[0.25em] uppercase border-2 border-gray-200 rounded-xl py-4 px-4 outline-none transition-colors"
               style={{
                 fontFamily: "ui-monospace, monospace",
@@ -83,7 +98,7 @@ export default function CustomerPage() {
 
             <button
               type="submit"
-              disabled={!plate || loading}
+              disabled={!plate.trim() || loading}
               className="w-full py-4 rounded-xl font-bold text-white text-base transition-all active:scale-95 disabled:opacity-50"
               style={{ background: "#f97316" }}
             >

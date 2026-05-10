@@ -34,8 +34,8 @@ async function seed() {
       make: "FORD",
       model: "S-MAX",
       km: 150000,
-      ownerName: "Ahmet Yılmaz",
-      ownerPhone: "0532 123 4567",
+      ownerName: "Enes Mert Yarpuz",
+      ownerPhone: "05050010816",
     })
     .returning()
     .get();

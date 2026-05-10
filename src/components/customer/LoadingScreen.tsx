@@ -34,7 +34,13 @@ export default function LoadingScreen() {
                     className="font-bold uppercase tracking-wide transition-all duration-300"
                     style={{
                       fontSize: "clamp(2rem, 10vw, 4.5rem)",
-                      color: isActive ? "#f97316" : isBgOrange ? "#fff" : "#1f2937",
+                      color: isActive
+                        ? "#f97316"
+                        : isBgOrange
+                          ? "#fff"
+                          : word === "Balans"
+                            ? "#f97316"
+                            : "#1f2937",
                       display: "inline-block",
                       transform: isActive ? "translateY(-8px)" : "translateY(0)",
                       transitionDelay: isActive

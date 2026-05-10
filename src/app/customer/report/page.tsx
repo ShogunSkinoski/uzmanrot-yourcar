@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Gauge, Disc, ChevronLeft } from "lucide-react";
+import { Gauge, Disc, ChevronLeft, MessageCircle, MapPin, Phone } from "lucide-react";
 import LoadingScreen from "@/components/customer/LoadingScreen";
 import { formatValue } from "@/lib/measurements";
 import {
@@ -130,6 +130,12 @@ function ReportContent() {
   const [view, setView] = useState<View>("menu");
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [view]);
+
+  useEffect(() => {
     if (!plate) {
       router.replace("/customer");
       return;
@@ -194,9 +200,29 @@ function ReportContent() {
     <div style={{ fontFamily: "system-ui, sans-serif", maxWidth: 480, margin: "0 auto", padding: 12, background: "#f8fafc", minHeight: "100vh" }}>
       {/* Header */}
       <div style={{ textAlign: "center", marginBottom: 16, padding: "14px 10px", background: "#fff", borderRadius: 10, border: "1px solid #e5e7eb" }}>
-        <div style={{ fontWeight: 800, fontSize: 18, color: "#1f2937", letterSpacing: 1 }}>UZMAN ROT BALANS</div>
-        <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>MOTORLU SAN. EMEVİLER SK. NO: 9/11 KONYA</div>
-        <div style={{ fontSize: 11, color: "#f97316", marginTop: 1 }}>0332 237 9226 / 0532 523 2903</div>
+        <div style={{ fontWeight: 800, fontSize: 18, color: "#1f2937", letterSpacing: 1 }}>
+          UZMAN ROT <span style={{ color: "#f97316" }}>BALANS</span>
+        </div>
+        <a
+          href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+            "Uzman Rot Balans, Motorlu Sanayi Emeviler Sk. No:9/11, Konya",
+          )}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+            fontSize: 11,
+            color: "#6b7280",
+            marginTop: 2,
+            textDecoration: "none",
+          }}
+        >
+          <MapPin size={12} color="#f97316" />
+          <span>MOTORLU SAN. EMEVİLER SK. NO: 9/11 KONYA</span>
+        </a>
+        <div style={{ fontSize: 11, color: "#f97316", marginTop: 1 }}>05050010816</div>
       </div>
 
       {/* Araç Bilgileri */}
@@ -238,6 +264,7 @@ function ReportContent() {
               onClick={() => setView("tires")}
             />
           </div>
+          <RandevuAlButton plate={vehicle.plate} service="general" />
           <div style={{ textAlign: "center", fontSize: 11, color: "#9ca3af", marginTop: 16, paddingBottom: 20 }}>
             BİZİ TERCİH ETTİĞİNİZ İÇİN TEŞEKKÜR EDERİZ
           </div>
@@ -248,6 +275,7 @@ function ReportContent() {
       {view === "alignment" && (
         <>
           <BackButton onClick={() => setView("menu")} />
+          <RandevuAlButton plate={vehicle.plate} service="alignment" />
           {record && (
             <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e5e7eb", padding: 10, marginBottom: 12, fontSize: 12 }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
@@ -316,6 +344,7 @@ function ReportContent() {
       {view === "tires" && (
         <>
           <BackButton onClick={() => setView("menu")} />
+          <RandevuAlButton plate={vehicle.plate} service="tires" />
           {tiresData && tiresData.sets.length > 0 ? (
             <TiresView data={tiresData} />
           ) : (
@@ -370,6 +399,51 @@ function MenuTile({
       <div style={{ fontSize: 14, fontWeight: 800, color: "#1f2937", textAlign: "center" }}>{label}</div>
       <div style={{ fontSize: 11, color: "#6b7280", textAlign: "center" }}>{sub}</div>
     </button>
+  );
+}
+
+const SHOP_PHONE = "905050010816";
+
+function RandevuAlButton({ plate, service }: { plate: string; service: "general" | "alignment" | "tires" }) {
+  const serviceText =
+    service === "alignment"
+      ? "rot ayarı"
+      : service === "tires"
+        ? "lastik değişimi"
+        : "servis";
+  const message = `Merhaba, ${plate} plakalı aracım için ${serviceText} randevusu almak istiyorum.`;
+  const waHref = `https://wa.me/${SHOP_PHONE}?text=${encodeURIComponent(message)}`;
+  const telHref = `tel:+${SHOP_PHONE}`;
+
+  const baseStyle: React.CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    padding: "12px 10px",
+    color: "#fff",
+    border: "none",
+    borderRadius: 12,
+    fontSize: 13,
+    fontWeight: 700,
+    textDecoration: "none",
+    boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
+  };
+
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+      <a
+        href={waHref}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{ ...baseStyle, background: "#25d366" }}
+      >
+        <MessageCircle size={16} /> Randevu Al (WhatsApp)
+      </a>
+      <a href={telHref} style={{ ...baseStyle, background: "#f97316" }}>
+        <Phone size={16} /> Telefonla Ara
+      </a>
+    </div>
   );
 }
 

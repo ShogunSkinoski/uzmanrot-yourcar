@@ -37,7 +37,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-black text-gray-800 uppercase tracking-wider">
-            Uzman Rot Balans
+            Uzman Rot <span style={{ color: "#f97316" }}>Balans</span>
           </h1>
           <p className="text-sm text-gray-400 mt-1">Yönetim Paneli</p>
         </div>

@@ -303,7 +303,7 @@ export default function NewRecordPage() {
                   { key: "make", label: "Marka", value: make, set: setMake, placeholder: "FORD" },
                   { key: "model", label: "Model", value: model, set: setModel, placeholder: "S-MAX" },
                   { key: "ownerName", label: "Sahip Adı", value: ownerName, set: setOwnerName, placeholder: "Opsiyonel" },
-                  { key: "ownerPhone", label: "Telefon", value: ownerPhone, set: setOwnerPhone, placeholder: "0532 000 0000" },
+                  { key: "ownerPhone", label: "Telefon", value: ownerPhone, set: setOwnerPhone, placeholder: "05050010816" },
                 ].map(({ key, label, value, set, placeholder }) => (
                   <div key={key} className="flex flex-col gap-1">
                     <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</label>

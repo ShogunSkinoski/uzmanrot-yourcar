@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 const reportData = {
   firma: "UZMAN ROT BALANS",
   adres: "MOTORLU SAN. EMEVİLER SK. NO: 9/11 KONYA",
-  telefon: "0332 237 9226 / 0532 523 2903",
+  telefon: "0332 237 9226 / 05050010816",
   tarih: "02.05.2026 18:57",
   musteri: "",
   firmaAdi: "ATN",
