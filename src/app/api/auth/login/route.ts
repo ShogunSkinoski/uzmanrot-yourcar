@@ -32,7 +32,9 @@ export async function POST(req: NextRequest) {
   const response = NextResponse.json({ ok: true, user: { fullName: user.fullName, role: user.role } });
   response.cookies.set(COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    // Only set Secure when actually served over HTTPS — otherwise the browser
+    // drops the cookie on plain-HTTP deployments (e.g. IP-only hosts).
+    secure: process.env.NEXT_PUBLIC_APP_URL?.startsWith("https://") ?? false,
     sameSite: "lax",
     maxAge: 60 * 60 * 8, // 8 hours
     path: "/",
