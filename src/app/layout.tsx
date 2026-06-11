@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Archivo_Black, Inter, Instrument_Serif } from "next/font/google";
 import { SITE } from "./_lib/site";
+import { Analytics } from "./_components/analytics";
 import "./globals.css";
 
 const display = Archivo_Black({
@@ -101,6 +102,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col antialiased">
         {children}
+        <Analytics />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

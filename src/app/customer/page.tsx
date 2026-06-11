@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { track } from "@/app/_lib/analytics";
 
 function formatPlate(p: string): string {
   if (!p) return "";
@@ -29,9 +30,11 @@ export default function CustomerPage() {
       const data = await res.json();
       setError(data.error ?? "Bir hata oluştu");
       setLoading(false);
+      track("plate_not_found"); // no plate value sent — privacy
       return;
     }
 
+    track("plate_submitted"); // conversion: successful lookup (no PII)
     router.push(`/customer/report?plate=${encodeURIComponent(normalized)}`);
   }
 
