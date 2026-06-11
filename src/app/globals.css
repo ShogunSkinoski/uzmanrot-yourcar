@@ -7,6 +7,112 @@
   --font-sans: ui-sans-serif, system-ui, sans-serif;
 }
 
+/* next/font sets these CSS variables on <html>; `inline` makes the
+   font-display / font-inter utilities reference them directly instead of
+   Tailwind redefining the (self-named) variable at :root. */
+@theme inline {
+  --font-display: var(--font-display);
+  --font-inter: var(--font-inter);
+  --font-serif: var(--font-serif);
+}
+
+/* shadcn-style monochrome design tokens for the landing page (pure-black base
+   plus white foreground). Names are chosen to NOT collide with the daisyUI
+   uzmanrot theme, which uses base, primary, secondary and accent. The brand
+   orange accent is kept via Tailwind's built-in orange-500 (#f97316). */
+:root {
+  --background: 0 0% 0%;
+  --foreground: 0 0% 100%;
+  --card: 0 0% 5%;
+  --card-foreground: 0 0% 100%;
+  --muted: 0 0% 15%;
+  --muted-foreground: 0 0% 65%;
+  --border: 0 0% 20%;
+  --input: 0 0% 18%;
+  --ring: 0 0% 40%;
+  --hero-subtitle: 210 17% 95%;
+}
+
+@theme {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-hero-subtitle: hsl(var(--hero-subtitle));
+}
+
+/* Liquid-glass surface (used on glassy buttons/cards over the dark theme). */
+.liquid-glass {
+  background: rgba(255, 255, 255, 0.01);
+  background-blend-mode: luminosity;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: none;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+.liquid-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.4px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.45) 0%,
+    rgba(255, 255, 255, 0.15) 20%,
+    rgba(255, 255, 255, 0) 40%,
+    rgba(255, 255, 255, 0) 60%,
+    rgba(255, 255, 255, 0.15) 80%,
+    rgba(255, 255, 255, 0.45) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Visible keyboard focus for every interactive element on the landing page
+   (the glass buttons set `border: none`, so they need an explicit ring). */
+.landing-root a:focus-visible,
+.landing-root button:focus-visible {
+  outline: 2px solid #f97316;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Right-to-left brand marquee. The track holds the list duplicated, so a
+   -50% shift loops seamlessly. Paused for reduced-motion users. */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 32s linear infinite;
+}
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee {
+    animation: none;
+  }
+}
+
 @plugin "daisyui/theme" {
   name: "uzmanrot";
   default: true;
@@ -45,4 +151,77 @@
 
 .dot-bounce {
   animation: dotBounce 1.2s infinite ease-in-out;
+}
+
+/* ---- Landing page hero animations ---- */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Animations only run when the user has not requested reduced motion.
+   Otherwise the elements keep their default (visible) state. */
+@media (prefers-reduced-motion: no-preference) {
+  .animate-fade-up,
+  .animate-fade-up-delay-1,
+  .animate-fade-up-delay-2,
+  .animate-fade-up-delay-3,
+  .animate-fade-up-delay-4 {
+    opacity: 0;
+    animation: fade-up 0.8s ease-out forwards;
+  }
+
+  .animate-fade-up-delay-1 {
+    animation-delay: 0.2s;
+  }
+  .animate-fade-up-delay-2 {
+    animation-delay: 0.4s;
+  }
+  .animate-fade-up-delay-3 {
+    animation-delay: 0.6s;
+  }
+  .animate-fade-up-delay-4 {
+    animation-delay: 0.8s;
+  }
+
+  .animate-fade-in {
+    opacity: 0;
+    animation: fade-in 0.8s ease-out forwards;
+  }
+
+  .animate-fade-in-delay {
+    opacity: 0;
+    animation: fade-in 1s ease-out 1s forwards;
+  }
+
+  /* Smooth in-page anchor navigation (e.g. the "Lastik Oteli" nav link). */
+  html {
+    scroll-behavior: smooth;
+  }
 }
